@@ -1,25 +1,72 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Week 1 project"
+author: "Julia"
+date: "May 16, 2015"
+output: html_document
 ---
+The data for this assignment is downloaded from the course web site.
+The variables included in this dataset are:
 
+* steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+* date: The date on which the measurement was taken in YYYY-MM-DD format
+* interval: Identifier for the 5-minute interval in which measurement was taken
 
-## Loading and preprocessing the data
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
+## Assignment
 
+###Loading and preprocessing the data
+```{r}
+Activity <- read.csv(file="activity.csv", header=TRUE)
+```
+###1.What is mean total number of steps taken per day?
+```{r as1}
+library(dplyr)
+Day_Total<-summarise(group_by(Activity, date), sum =sum(steps))
+hist(Day_Total$sum)
+summary(Day_Total)
+avg <-mean(Day_Total$sum, na.rm=TRUE)
+med <-median(Day_Total$sum, na.rm=TRUE)
+```
+The mean of the total number of steps take per day is `r avg` and the median is `r med`.
 
-## What is mean total number of steps taken per day?
+###2.What is the average daily activity pattern?
+```{r as2}
+Int_Avg<-summarise(group_by(Activity, interval), avg =mean(steps,na.rm=TRUE))
+plot(avg ~ interval,data=Int_Avg, xlab="5 min Intervals", ylab="Average steps across all days", type="l")
+summary(Int_Avg)
+head(Int_Avg)
+max_row <-filter(Int_Avg, Int_Avg$avg==max(Int_Avg$avg))
+```
+`r max_row$interval`, 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps, `r max_row$avg`.
 
+###3.Imputing missing values
+```{r as3}
+library(Hmisc)
+#Activity$Imp_steps<-impute(Activity$steps, mean)
+NA_Steps <-is.na(Activity$steps)
+Missing <-length(which(NA_Steps))
+Activity$steps[which(is.na(Activity$steps))]<-0
 
+ 
+IDay_Total<-summarise(group_by(Activity, date), sum =sum(steps))
+hist(IDay_Total$sum)
+summary(IDay_Total)
+Iavg <-mean(IDay_Total$sum, na.rm=TRUE)
+Imed <-median(IDay_Total$sum, na.rm=TRUE)
+diff_avg<- Iavg-avg
+diff_med<- Imed-med
+```
+The total number of missing values in the dataset is ` r Missing`. After imputing using mean for 5 - minutes interval, the mean of the total number of steps take per day is 'r Iavg` and the median is `r Imed`. After imputing, the mean increased by `r diff_avg` and median increased by `r diff_med`.
 
-## What is the average daily activity pattern?
+###4.Are there differences in activity patterns between weekdays and weekends?
+```{r as4}
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+Activity$wDay <-  factor((weekdays(as.Date(Activity$date)) %in% weekdays1)+1L,
+      levels=1:2, labels=c('weekend', 'weekday'))
+wday_Avg<-summarise(group_by(Activity, interval), wdavg =mean(steps,na.rm=TRUE))
+wend_Avg<-summarise(group_by(Activity, interval), wdavg =mean(steps,na.rm=TRUE))
+plot(wdavg ~ interval,data=wday_Avg, xlab="5 min Intervals", ylab="Average steps across all days", type="l")
 
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+head(Activity)
+```
